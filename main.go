@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"os/exec"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/invopop/jsonschema"
@@ -28,7 +29,7 @@ func main() {
 		return scanner.Text(), true
 	}
 
-	tools := []ToolDefinition{ReadFileDefinition, EditFileDefinition}
+	tools := []ToolDefinition{ReadFileDefinition, EditFileDefinition,RunCommandDefinition}
 	agent := NewAgent(&client, getUserMessage, tools)
 
 	err := agent.Run(context.TODO())
@@ -161,6 +162,19 @@ type ReadFileInput struct {
 	Path string `json:"path" jsonschema_description:"The relative path of a file in the working directory."`
 }
 
+type RunCommandInput struct {
+    Command string `json:"command" jsonschema_description:"The PowerShell command to execute."`
+}
+
+var RunCommandInputSchema = GenerateSchema[RunCommandInput]()
+
+var RunCommandDefinition = ToolDefinition{
+    Name:        "run_command",
+    Description: "Run a terminal command using PowerShell in the current project directory. Returns command output and errors.",
+    InputSchema: RunCommandInputSchema,
+    Function:    RunCommand,
+}
+
 var ReadFileInputSchema = GenerateSchema[ReadFileInput]()
 
 func ReadFile(input json.RawMessage) (string, error) {
@@ -261,3 +275,22 @@ func createNewFile(filePath, content string) (string, error) {
 
 	return fmt.Sprintf("Successfully created file %s", filePath), nil
 }
+
+
+func RunCommand(input json.RawMessage) (string, error) {
+	var commandInput RunCommandInput
+	if err := json.Unmarshal(input, &commandInput); err != nil {
+		return "", err
+	}
+
+	cmd := exec.Command(
+		"powershell.exe",
+		"-NoProfile",
+		"-Command",
+		commandInput.Command,
+	)
+
+	output, err := cmd.CombinedOutput()
+	return string(output), err
+}
+
