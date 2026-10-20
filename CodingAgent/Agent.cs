@@ -18,6 +18,11 @@ public class Agent
         _tools.Add(new ToolDefinition("edit_file",
             "Create or edit a text file by replacing old_str with new_str. Use an empty old_str to create a new file.",
             EditFileSchema(), EditFile));
+        _tools.Add(new ToolDefinition(
+        "delete_file",
+        "Delete a file at the specified path.",
+        DeleteFileSchema(),
+        DeleteFile));
         _tools.Add(new ToolDefinition("run_command",
             "Execute any PowerShell command in the current project directory.",
             RunCommandSchema(), RunCommand));
@@ -44,7 +49,7 @@ public async Task RunAsync()
         while (true)
         {
             var response = await _client.Messages.Create(
-                new MessageCreateParams
+                new MessageCreateParams 
                 {
                     Model = "claude-fable-5-1",
                     MaxTokens = 1024,
@@ -135,6 +140,24 @@ public async Task RunAsync()
         var input = JsonNode.Parse(json)!;
         return await File.ReadAllTextAsync(input["path"]!.GetValue<string>());
     }
+    
+    private static Task<string> DeleteFile(string json)
+        {
+        var input = JsonNode.Parse(json)!;
+        var path = input["path"]!.GetValue<string>();
+
+        if (!File.Exists(path))
+            throw new FileNotFoundException($"File not found: {path}");
+
+        if (!path.StartsWith(".") || path.Contains(".."))
+        {
+            throw new UnauthorizedAccessException("Only files in the current directory are allowed.");
+        }
+
+        File.Delete(path);
+
+        return Task.FromResult($"Successfully deleted {path}");
+    }
 
     private static async Task<string> EditFile(string json)
     {
@@ -212,6 +235,16 @@ public async Task RunAsync()
             ["new_str"] = JsonSerializer.SerializeToElement(new { type = "string" })
         },
         Required = ["path", "old_str", "new_str"]
+    };
+
+    private static InputSchema DeleteFileSchema() => new()
+    {
+        Properties = new Dictionary<string, JsonElement>
+        {
+            ["path"] = JsonSerializer.SerializeToElement(
+                new { type = "string", description = "Path of the file to delete" })
+        },
+        Required = ["path"]
     };
 
     private static InputSchema RunCommandSchema() => new()

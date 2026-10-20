@@ -5,10 +5,11 @@ added a run_command tool to execute code and tests to the coding agent.
 
 so now we have
     read_file to read existing files.
+    delete_file to delete existing files but only from inside the current directory.
     edit_file to create or modify files.
     run_command to execute PowerShell commands and run code or tests.
 
-putting restrictions to the run_command function like having it be specific keywords that would trigger the function
+putting restrictions to the run_command or the delete_file function like having it be specific keywords that would trigger the function
 
 removed the restrictions because we want YOLO
 
