@@ -35,9 +35,6 @@ public async Task RunAsync()
         Console.Write("\u001b[94mYou\u001b[0m: ");
         var input = Console.ReadLine();
 
-        if (input == null)
-            break;
-
         conversation.Add(new MessageParam
         {
             Role = Role.User,
@@ -93,26 +90,18 @@ public async Task RunAsync()
 
                     string result;
                     bool failed = false;
-
-                    if (tool == null)
+                    
+                    try
                     {
-                        result = "tool not found";
+                        result = await tool.Execute(
+                            JsonSerializer.Serialize(toolUse.Input));
+                    }
+                    catch (Exception ex)
+                    {
+                        result = ex.Message;
                         failed = true;
                     }
-                    else
-                    {
-                        try
-                        {
-                            result = await tool.Execute(
-                                JsonSerializer.Serialize(toolUse.Input));
-                        }
-                        catch (Exception ex)
-                        {
-                            result = ex.Message;
-                            failed = true;
-                        }
-                    }
-
+                    
                     toolResults.Add(new ToolResultBlockParam
                     {
                         ToolUseID = toolUse.ID,
@@ -127,10 +116,10 @@ public async Task RunAsync()
                 Role = Role.Assistant,
                 Content = assistantContent
             });
-
+            
             if (toolResults.Count == 0)
                 break;
-
+            
             conversation.Add(new MessageParam
             {
                 Role = Role.User,
