@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "dgSpecHash": "+YJKcIFQIFw=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Madso\\Documents\\GitHub\\CodingAgent\\CodingAgent\\CodingAgent.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Madso\\.nuget\\packages\\anthropic\\12.58.0\\anthropic.12.58.0.nupkg.sha512",
+    "C:\\Users\\Madso\\.nuget\\packages\\dotnetenv\\3.2.0\\dotnetenv.3.2.0.nupkg.sha512",
+    "C:\\Users\\Madso\\.nuget\\packages\\microsoft.extensions.ai.abstractions\\10.5.1\\microsoft.extensions.ai.abstractions.10.5.1.nupkg.sha512",
+    "C:\\Users\\Madso\\.nuget\\packages\\microsoft.extensions.configuration\\1.1.2\\microsoft.extensions.configuration.1.1.2.nupkg.sha512",
+    "C:\\Users\\Madso\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\1.1.2\\microsoft.extensions.configuration.abstractions.1.1.2.nupkg.sha512",
+    "C:\\Users\\Madso\\.nuget\\packages\\microsoft.extensions.primitives\\1.1.1\\microsoft.extensions.primitives.1.1.1.nupkg.sha512",
+    "C:\\Users\\Madso\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
+    "C:\\Users\\Madso\\.nuget\\packages\\netstandard.library\\1.6.1\\netstandard.library.1.6.1.nupkg.sha512",
+    "C:\\Users\\Madso\\.nuget\\packages\\superpower\\3.0.0\\superpower.3.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

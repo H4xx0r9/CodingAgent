@@ -1,1 +1,0 @@
-Creating a model in Go is seriously cool. Static typing keeps your data honest, structs make models clean, goroutines bring effortless concurrency, and blazing compile times keep you shipping fast and fearless.
