@@ -33,3 +33,22 @@ solved its because if we dont write a tool we want used we need to break the inn
 
 thinking about adding permissions to claude???
 
+
+### log tokens functionality
+We added a functionality that automatically logs the tokens used per claude model execution. An example line looks like this:
+
+```
+2026-10-21 14:23:45 | Model: claude-haiku-5-5 | Duration: 1.14s | Input: 682 | Output: 40 | Total: 722 | Cost: $0.000088
+```
+
+which is the timestamp it got executed, the model used for this, the duration it took, input/output and total tokens used for this, and the converted cost based on the model used.
+
+Right now we have added token to dollar conversions based on only 3 models, which can be seen on the table below:
+
+| Model | Input / 1M tokens | Output / 1M tokens |
+|---|---:|---|
+| claude-fable-5-1 | $10.00 | $50.00 |
+| claude-sonnet-5-5 | $2.00 | $10.00 | 
+| claude-haiku-5-5 | $0.10 | $0.50 |
+
+To build this we used anthropic functionalities to keep track of the tokens used, we check the conversion rates for each model online, and we create a list that for each model name it maps the correct conversions. Then for the duration we used a start and stop function when executing the anthropic response. Finally, we created a function that takes the total input and output tokens, the duration and the models name as parameters and adds a line with all of them in a tokens.log file.

@@ -3,11 +3,19 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Anthropic;
 using Anthropic.Models.Messages;
+using System.IO;
 
 public class Agent
 {
     private readonly AnthropicClient _client;
     private readonly List<ToolDefinition> _tools = new();
+
+    private static readonly Dictionary<string, (double Input, double Output)> ModelRates = new()
+    {
+        ["claude-fable-5-1"] = (10.0, 50.0),
+        ["claude-sonnet-5-5"] = (2.0, 10.0),
+        ["claude-haiku-5-5"] = (0.10, 0.50)
+    };
 
     public Agent()
     {
@@ -32,6 +40,7 @@ public class Agent
 public async Task RunAsync()
 {
     var conversation = new List<MessageParam>();
+    string model_name = "claude-haiku-5-5";
 
     Console.WriteLine("Chat with Claude (Ctrl+C to quit)");
 
@@ -47,11 +56,14 @@ public async Task RunAsync()
         });
 
         while (true)
-        {
+        {   
+            
+            var stopwatch = Stopwatch.StartNew();
+            
             var response = await _client.Messages.Create(
-                new MessageCreateParams 
+                new MessageCreateParams
                 {
-                    Model = "claude-fable-5-1",
+                    Model = model_name,
                     MaxTokens = 1024,
                     Messages = conversation,
                     Tools = _tools.Select(t => new ToolUnion(
@@ -63,6 +75,15 @@ public async Task RunAsync()
                         }
                     )).ToList()
                 });
+
+            stopwatch.Stop();
+
+            LogTokenUsage(
+                model_name,
+                response.Usage.InputTokens,
+                response.Usage.OutputTokens,
+                stopwatch.Elapsed.TotalSeconds
+            );
 
             var assistantContent = new List<ContentBlockParam>();
             var toolResults = new List<ContentBlockParam>();
@@ -133,14 +154,36 @@ public async Task RunAsync()
         }
     }
 }
+    private static void LogTokenUsage(
+        string model,
+        long inputTokens,
+        long outputTokens,
+        double durationSeconds)
+    {
+        var rates = ModelRates[model];
 
+        long totalTokens = inputTokens + outputTokens;
 
+        double inputCost = inputTokens * rates.Input / 1_000_000;
+        double outputCost = outputTokens * rates.Output / 1_000_000;
+        double totalCost = inputCost + outputCost;
+
+        string log = $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} | " +
+                    $"Model: {model} | " +
+                    $"Duration: {durationSeconds:F2}s | " +
+                    $"Input: {inputTokens} | " +
+                    $"Output: {outputTokens} | " +
+                    $"Total: {totalTokens} | " +
+                    $"Cost: ${totalCost:F6}";
+
+        File.AppendAllText("tokens.log", log + Environment.NewLine);
+    }
     private static async Task<string> ReadFile(string json)
     {
         var input = JsonNode.Parse(json)!;
         return await File.ReadAllTextAsync(input["path"]!.GetValue<string>());
     }
-    
+
     private static Task<string> DeleteFile(string json)
         {
         var input = JsonNode.Parse(json)!;

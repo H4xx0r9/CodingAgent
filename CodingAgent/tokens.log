@@ -1,0 +1,15 @@
+2026-10-21 12:57:40 | Model: claude-fable-5-1 | Duration: 2.27s | Input: 682 | Output: 72 | Total: 754 | Cost: $0.010420
+2026-10-21 12:58:07 | Model: claude-fable-5-1 | Duration: 2.37s | Input: 760 | Output: 163 | Total: 923 | Cost: $0.015750
+2026-10-21 12:58:09 | Model: claude-fable-5-1 | Duration: 1.86s | Input: 930 | Output: 98 | Total: 1028 | Cost: $0.014200
+2026-10-21 13:00:01 | Model: claude-fable-5-1 | Duration: 2.03s | Input: 1039 | Output: 51 | Total: 1090 | Cost: $0.012940
+2026-10-21 13:00:02 | Model: claude-fable-5-1 | Duration: 0.69s | Input: 1107 | Output: 13 | Total: 1120 | Cost: $0.011720
+2026-10-21 13:00:34 | Model: claude-fable-5-1 | Duration: 1.82s | Input: 1126 | Output: 33 | Total: 1159 | Cost: $0.012910
+2026-10-21 13:01:04 | Model: claude-fable-5-1 | Duration: 2.35s | Input: 682 | Output: 73 | Total: 755 | Cost: $0.010420
+2026-10-21 13:06:28 | Model: claude-fable-5-1 | Duration: 2.87s | Input: 682 | Output: 81 | Total: 763 | Cost: $0.010870
+2026-10-21 13:22:52 | Model: claude-fable-5-1 | Duration: 2.61s | Input: 682 | Output: 71 | Total: 753 | Cost: $0.010370
+2026-10-21 13:23:45 | Model: claude-haiku-5-5 | Duration: 1.14s | Input: 682 | Output: 40 | Total: 722 | Cost: $0.000088
+2026-10-21 13:48:39 | Model: claude-haiku-5-5 | Duration: 1.35s | Input: 682 | Output: 14 | Total: 696 | Cost: $0.000075
+2026-10-21 13:49:09 | Model: claude-haiku-5-5 | Duration: 0.87s | Input: 700 | Output: 37 | Total: 737 | Cost: $0.000088
+2026-10-21 13:49:32 | Model: claude-haiku-5-5 | Duration: 1.68s | Input: 741 | Output: 56 | Total: 797 | Cost: $0.000102
+
+
