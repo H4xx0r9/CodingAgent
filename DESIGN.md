@@ -27,7 +27,7 @@ The first version did not compile because the Anthropic C# SDK uses different ty
 chat gpt helped us understand the specific library API and helped us convert the types and message conversion
 
 Problem:
-    if have to give it 1 of the commands otherwise it crashes 
+    if none of the commands are prompted it crashes 
 
 solved its because if we dont write a tool we want used we need to break the inner loop
 
