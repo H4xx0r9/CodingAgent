@@ -6,3 +6,4 @@
 | 10/20/2026 | 3:56-7:33  | Mads, Nikan   | 5,045 / $?         | rewrote the agent in C# with the help of GPT | SDK types, constructors, properties, and message-conversion methods|
 | 10/20/2026 | 7:35-9:43  | Mads, Nikan    | ~0 / $0            | trying to understand what makes the other mini-agents different|      |
 | 10/21/2026 | 00:15-1:27  | Mads, Nikan    | 5,887 / $0.2            | added a delete file tool to the agent with the help of GPT with a permission of deleting file only from current directory | making the permission correct |
+| 10/21/2026 | 12:15 - 13:50 | Mads, Nikan    | 11,359 / $0.11    | add a functionality that logs the tokens, cost and model used in a file (help of GPT) | |
