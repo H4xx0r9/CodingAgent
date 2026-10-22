@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CodingAgent")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7f48c85948a3020da3b168f63e75e0db799a3f64")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+878f33d0efc5d6fb756660368600ec99e8d4eeac")]
 [assembly: System.Reflection.AssemblyProductAttribute("CodingAgent")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CodingAgent")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -26,11 +26,9 @@ public class Agent
         _tools.Add(new ToolDefinition("edit_file",
             "Create or edit a text file by replacing old_str with new_str. Use an empty old_str to create a new file.",
             EditFileSchema(), EditFile));
-        _tools.Add(new ToolDefinition(
-        "delete_file",
-        "Delete a file at the specified path.",
-        DeleteFileSchema(),
-        DeleteFile));
+        _tools.Add(new ToolDefinition("delete_file",
+            "Delete a file at the specified path.",
+            DeleteFileSchema(),DeleteFile));
         _tools.Add(new ToolDefinition("run_command",
             "Execute any PowerShell command in the current project directory.",
             RunCommandSchema(), RunCommand));
@@ -119,14 +117,31 @@ public async Task RunAsync()
                     
                     try
                     {
-                        result = await tool.Execute(
-                            JsonSerializer.Serialize(toolUse.Input));
-                    }
-                    catch (Exception ex)
+                        if (tool.Name != "read_file")
                     {
-                        result = ex.Message;
+                        Console.Write($"Allow {tool.Name}? (y/n): ");
+                        var approval = Console.ReadLine();
+
+                    if (approval?.ToLower() != "y")
+                    {
+                        result = "User denied permission to execute this tool.";
                         failed = true;
                     }
+                    else
+                    {
+                        result = await tool.Execute(JsonSerializer.Serialize(toolUse.Input));
+                    }
+                }
+                else
+                {
+                    result = await tool.Execute(JsonSerializer.Serialize(toolUse.Input));
+                }
+                }
+                catch (Exception ex)
+                {
+                    result = ex.Message;
+                    failed = true;
+                }
                     
                     toolResults.Add(new ToolResultBlockParam
                     {
