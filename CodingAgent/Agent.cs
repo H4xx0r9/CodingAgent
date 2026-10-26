@@ -199,23 +199,19 @@ public async Task RunAsync()
         return await File.ReadAllTextAsync(input["path"]!.GetValue<string>());
     }
 
-    private static Task<string> DeleteFile(string json)
-        {
-        var input = JsonNode.Parse(json)!;
-        var path = input["path"]!.GetValue<string>();
 
-        if (!File.Exists(path))
-            throw new FileNotFoundException($"File not found: {path}");
+private static Task<string> DeleteFile(string json)
+{
+    var input = JsonNode.Parse(json)!;
+    var path = GetSafePath(input["path"]!.GetValue<string>());
 
-        if (!path.StartsWith(".") || path.Contains(".."))
-        {
-            throw new UnauthorizedAccessException("Only files in the current directory are allowed.");
-        }
+    if (!File.Exists(path))
+        throw new FileNotFoundException($"File not found: {path}");
 
-        File.Delete(path);
+    File.Delete(path);
 
-        return Task.FromResult($"Successfully deleted {path}");
-    }
+    return Task.FromResult($"Successfully deleted {path}");
+}
 
     private static async Task<string> EditFile(string json)
     {
@@ -294,7 +290,23 @@ public async Task RunAsync()
         },
         Required = ["path", "old_str", "new_str"]
     };
+    private static string GetSafePath(string path)
+{
+    string baseDirectory = Path.GetFullPath(Directory.GetCurrentDirectory());
+    string fullPath = Path.GetFullPath(path, baseDirectory);
 
+    string relativePath = Path.GetRelativePath(baseDirectory, fullPath);
+
+    if (relativePath == ".." ||
+        relativePath.StartsWith(".." + Path.DirectorySeparatorChar) ||
+        Path.IsPathRooted(relativePath))
+    {
+        throw new UnauthorizedAccessException(
+            "Only files in the current directory are allowed.");
+    }
+
+    return fullPath;
+}
     private static InputSchema DeleteFileSchema() => new()
     {
         Properties = new Dictionary<string, JsonElement>
