@@ -26,14 +26,10 @@ public class Agent
         _tools.Add(new ToolDefinition("edit_file",
             "Create or edit a text file by replacing old_str with new_str. Use an empty old_str to create a new file.",
             EditFileSchema(), EditFile));
-        _tools.Add(new ToolDefinition("delete_file",
-            "Delete a file at the specified path.",
-            DeleteFileSchema(),DeleteFile));
         _tools.Add(new ToolDefinition("run_command",
             "Execute any PowerShell command in the current project directory.",
             RunCommandSchema(), RunCommand));
     }
-
 
 public async Task RunAsync()
 {
@@ -54,10 +50,9 @@ public async Task RunAsync()
         });
 
         while (true)
-        {   
-            
+        {
             var stopwatch = Stopwatch.StartNew();
-            
+
             var response = await _client.Messages.Create(
                 new MessageCreateParams
                 {
@@ -86,6 +81,8 @@ public async Task RunAsync()
             var assistantContent = new List<ContentBlockParam>();
             var toolResults = new List<ContentBlockParam>();
 
+            var pendingTools = new List<(string ID, string Name, string Input, ToolDefinition Tool)>();
+
             foreach (var block in response.Content)
             {
                 if (block.TryPickText(out TextBlock? text))
@@ -106,46 +103,98 @@ public async Task RunAsync()
                         Input = toolUse.Input
                     });
 
-                    Console.WriteLine(
-                        $"\u001b[92mtool\u001b[0m: {toolUse.Name}");
+                    Console.WriteLine($"\u001b[92mtool\u001b[0m: {toolUse.Name}");
 
-                    var tool = _tools.FirstOrDefault(
-                        t => t.Name == toolUse.Name);
+                    var tool = _tools.FirstOrDefault(t => t.Name == toolUse.Name);
 
+                    if (tool == null)
+                    {
+                        toolResults.Add(new ToolResultBlockParam
+                        {
+                            ToolUseID = toolUse.ID,
+                            Content = $"Unknown tool: {toolUse.Name}",
+                            IsError = true
+                        });
+
+                        continue;
+                    }
+
+                    if (tool.Name == "read_file")
+                    {
+                        try
+                        {
+                            var result = await tool.Execute(
+                                JsonSerializer.Serialize(toolUse.Input));
+
+                            toolResults.Add(new ToolResultBlockParam
+                            {
+                                ToolUseID = toolUse.ID,
+                                Content = result
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            toolResults.Add(new ToolResultBlockParam
+                            {
+                                ToolUseID = toolUse.ID,
+                                Content = ex.Message,
+                                IsError = true
+                            });
+                        }
+                    }
+                    else
+                    {
+                        pendingTools.Add((
+                            toolUse.ID,
+                            toolUse.Name,
+                            JsonSerializer.Serialize(toolUse.Input),
+                            tool
+                        ));
+                    }
+                }
+            }
+
+            if (pendingTools.Count > 0)
+            {
+                Console.WriteLine("\nClaude wants to execute:");
+
+                for (int i = 0; i < pendingTools.Count; i++)
+                {
+                    var item = pendingTools[i];
+
+                    Console.WriteLine($"\n{i + 1}. {item.Name}");
+                    Console.WriteLine(item.Input);
+                }
+
+                Console.Write("\nAllow all operations (y/n): ");
+                var approval = Console.ReadLine();
+
+                foreach (var item in pendingTools)
+                {
                     string result;
                     bool failed = false;
-                    
-                    try
-                    {
-                        if (tool.Name != "read_file")
-                    {
-                        Console.Write($"Allow {tool.Name}? (y/n): ");
-                        var approval = Console.ReadLine();
 
-                    if (approval?.ToLower() != "y")
+                    if (approval?.Trim().ToLower() == "y")
+                    {
+                        try
+                        {
+                            result = await item.Tool.Execute(item.Input);
+                        }
+                        catch (Exception ex)
+                        {
+                            result = ex.Message;
+                            failed = true;
+                        }
+                    }
+                    else
                     {
                         result = "User denied permission to execute this tool.";
                         failed = true;
                     }
-                    else
-                    {
-                        result = await tool.Execute(JsonSerializer.Serialize(toolUse.Input));
-                    }
-                }
-                else
-                {
-                    result = await tool.Execute(JsonSerializer.Serialize(toolUse.Input));
-                }
-                }
-                catch (Exception ex)
-                {
-                    result = ex.Message;
-                    failed = true;
-                }
-                    
+
                     toolResults.Add(new ToolResultBlockParam
                     {
-                        ToolUseID = toolUse.ID,
+                        ToolUseID = item.ID,
                         Content = result,
                         IsError = failed
                     });
@@ -157,10 +206,10 @@ public async Task RunAsync()
                 Role = Role.Assistant,
                 Content = assistantContent
             });
-            
+
             if (toolResults.Count == 0)
                 break;
-            
+
             conversation.Add(new MessageParam
             {
                 Role = Role.User,
@@ -169,6 +218,7 @@ public async Task RunAsync()
         }
     }
 }
+
     private static void LogTokenUsage(
         string model,
         long inputTokens,
@@ -198,20 +248,6 @@ public async Task RunAsync()
         var input = JsonNode.Parse(json)!;
         return await File.ReadAllTextAsync(input["path"]!.GetValue<string>());
     }
-
-
-private static Task<string> DeleteFile(string json)
-{
-    var input = JsonNode.Parse(json)!;
-    var path = GetSafePath(input["path"]!.GetValue<string>());
-
-    if (!File.Exists(path))
-        throw new FileNotFoundException($"File not found: {path}");
-
-    File.Delete(path);
-
-    return Task.FromResult($"Successfully deleted {path}");
-}
 
     private static async Task<string> EditFile(string json)
     {
@@ -290,23 +326,7 @@ private static Task<string> DeleteFile(string json)
         },
         Required = ["path", "old_str", "new_str"]
     };
-    private static string GetSafePath(string path)
-{
-    string baseDirectory = Path.GetFullPath(Directory.GetCurrentDirectory());
-    string fullPath = Path.GetFullPath(path, baseDirectory);
-
-    string relativePath = Path.GetRelativePath(baseDirectory, fullPath);
-
-    if (relativePath == ".." ||
-        relativePath.StartsWith(".." + Path.DirectorySeparatorChar) ||
-        Path.IsPathRooted(relativePath))
-    {
-        throw new UnauthorizedAccessException(
-            "Only files in the current directory are allowed.");
-    }
-
-    return fullPath;
-}
+    
     private static InputSchema DeleteFileSchema() => new()
     {
         Properties = new Dictionary<string, JsonElement>
