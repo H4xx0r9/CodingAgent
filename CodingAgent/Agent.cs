@@ -3,10 +3,14 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Anthropic;
 using Anthropic.Models.Messages;
-using System.IO;
+using OpenAI;
+using OpenAI.Chat;
+using System.ClientModel;
+using System.Text;
 
 public class Agent
 {
+    
     private readonly AnthropicClient _client;
     private readonly List<ToolDefinition> _tools = new();
 
@@ -31,6 +35,7 @@ public class Agent
             RunCommandSchema(), RunCommand));
     }
 
+
 public async Task RunAsync()
 {
     var conversation = new List<MessageParam>();
@@ -42,6 +47,9 @@ public async Task RunAsync()
     {
         Console.Write("\u001b[94mYou\u001b[0m: ");
         var input = Console.ReadLine();
+
+        if (string.IsNullOrWhiteSpace(input))
+            continue;
 
         conversation.Add(new MessageParam
         {
@@ -80,14 +88,15 @@ public async Task RunAsync()
 
             var assistantContent = new List<ContentBlockParam>();
             var toolResults = new List<ContentBlockParam>();
-
             var pendingTools = new List<(string ID, string Name, string Input, ToolDefinition Tool)>();
+            var generatedOutput = new StringBuilder();
 
             foreach (var block in response.Content)
             {
                 if (block.TryPickText(out TextBlock? text))
                 {
                     Console.WriteLine($"\u001b[93mClaude\u001b[0m: {text.Text}");
+                    generatedOutput.AppendLine(text.Text);
 
                     assistantContent.Add(new TextBlockParam
                     {
@@ -207,17 +216,68 @@ public async Task RunAsync()
                 Content = assistantContent
             });
 
-            if (toolResults.Count == 0)
+            if (toolResults.Count > 0)
+            {
+                conversation.Add(new MessageParam
+                {
+                    Role = Role.User,
+                    Content = toolResults
+                });
+
+                continue;
+            }
+
+            Console.WriteLine("\nChecking Claude's output with Corti---");
+
+            var checkResult = await CheckOutput(generatedOutput.ToString());
+
+            Console.WriteLine($"\u001b[96mCorti\u001b[0m: {checkResult}");
+
+            if (checkResult.Trim().StartsWith(
+                "APPROVED",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Corti approved the result.\n");
                 break;
+            }
+
+            Console.WriteLine("Corti rejected the result. Claude will try again.\n");
 
             conversation.Add(new MessageParam
             {
                 Role = Role.User,
-                Content = toolResults
+                Content = $"Corti rejected your output try again:\n\n{checkResult}"
             });
         }
     }
 }
+
+
+
+
+private async Task<string> CheckOutput(string output)
+{
+    var client = new ChatClient(
+        "corti-s1-mini",
+        new ApiKeyCredential(
+            Environment.GetEnvironmentVariable("CORTI_API_KEY")!),
+        new OpenAIClientOptions
+        {
+            Endpoint = new Uri(
+                Environment.GetEnvironmentVariable("CORTI_BASE_URL")!)
+        });
+
+    var response = await client.CompleteChatAsync(
+    [
+        new SystemChatMessage("Approve correct solutions, reject incorrect ones, and explain any errors. Reply APPROVED or REJECTED with feedback."),
+        new UserChatMessage(
+            $"Original task:\nGenerated output:\n{output}")
+    ]);
+
+    return response.Value.Content[0].Text;
+}
+
+
 
     private static void LogTokenUsage(
         string model,
@@ -325,16 +385,6 @@ public async Task RunAsync()
             ["new_str"] = JsonSerializer.SerializeToElement(new { type = "string" })
         },
         Required = ["path", "old_str", "new_str"]
-    };
-    
-    private static InputSchema DeleteFileSchema() => new()
-    {
-        Properties = new Dictionary<string, JsonElement>
-        {
-            ["path"] = JsonSerializer.SerializeToElement(
-                new { type = "string", description = "Path of the file to delete" })
-        },
-        Required = ["path"]
     };
 
     private static InputSchema RunCommandSchema() => new()

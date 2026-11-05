@@ -8,4 +8,5 @@
 | 10/21/2026 | 00:15-1:27  | Mads, Nikan    | 5,887 / $0.2            | added a delete file tool to the agent with the help of GPT with a permission of deleting file only from current directory | making the permission correct |
 | 10/21/2026 | 12:15 - 13:50 | Mads, Nikan    | 11,359 / $0.11    | add a functionality that logs the tokens, cost and model used in a file (help of GPT) | |
 | 10/22/2026 | 16:20-18:18  | Mads, Nikan    | ~7000 / $0            | added permissions to everything but read     |---                |
-| 11/3/2026 | 1:39-  | Mads, Nikan    | ~1821 / $$0.000196    | implemented 2 phases to list all the commands and (Y/no) and then execute   |---                |
+| 11/3/2026 | 1:39-3.19  | Mads, Nikan    | ~1821 / $$0.000196    | implemented 2 phases to list all the commands and (Y/no) and then execute | making sure it does not jump out the loop afterwards |
+| 10/22/2026 |  | Mads, Nikan    |            | awowowowowowoww    | claud still makes the changes even though it rejected?                |
