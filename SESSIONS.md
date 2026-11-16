@@ -9,4 +9,5 @@
 | 10/21/2026 | 12:15 - 13:50 | Mads, Nikan    | 11,359 / $0.11    | add a functionality that logs the tokens, cost and model used in a file (help of GPT) | |
 | 10/22/2026 | 16:20-18:18  | Mads, Nikan    | ~7000 / $0            | added permissions to everything but read     |---                |
 | 11/3/2026 | 1:39-3:19  | Mads, Nikan    | ~1821 / $$0.000196    | implemented 2 phases to list all the commands and (Y/no) and then execute | making sure it does not jump out the loop afterwards |
-| 11/5/2026 | 7:39-10:46 | Mads, Nikan    |  3749 / $0.000605          | implemented LLM checking LLM (claud - corti)   | corti either rejects or approves anything  |
+| 11/5/2026 | 7:39-10:46 | Mads, Nikan    |  3749 / $0.000605   | implemented LLM checking LLM (Claude - Corti)   | corti either rejects or approves anything  |
+| 11/6/2026 | 10:50-12:56 | Mads, Nikan    |  5540 /$0.000744    | Changed Corti to become a code reviewer  | editFile tool |

@@ -28,7 +28,7 @@ public class Agent
             "Read the contents of a file.",
             ReadFileSchema(), ReadFile));
         _tools.Add(new ToolDefinition("edit_file",
-            "Create or edit a text file by replacing old_str with new_str. Use an empty old_str to create a new file.",
+            "Create or edit a text file. Always provide path, old_str and new_str. Use an empty old_str to create a new file.",
             EditFileSchema(), EditFile));
         _tools.Add(new ToolDefinition("run_command",
             "Execute any PowerShell command in the current project directory.",
@@ -65,7 +65,7 @@ public async Task RunAsync()
                 new MessageCreateParams
                 {
                     Model = model_name,
-                    MaxTokens = 1024,
+                    MaxTokens = 4096,
                     Messages = conversation,
                     Tools = _tools.Select(t => new ToolUnion(
                         new Tool
@@ -228,26 +228,12 @@ public async Task RunAsync()
             }
 
             Console.WriteLine("\nChecking Claude's output with Corti---");
+            var review = await CheckOutput(input, generatedOutput.ToString());
+            Console.WriteLine("\n--- Corti Code Review ---");
+            Console.WriteLine(review);
+            
 
-            var checkResult = await CheckOutput(generatedOutput.ToString());
-
-            Console.WriteLine($"\u001b[96mCorti\u001b[0m: {checkResult}");
-
-            if (checkResult.Trim().StartsWith(
-                "APPROVED",
-                StringComparison.OrdinalIgnoreCase))
-            {
-                Console.WriteLine("Corti approved the result.\n");
-                break;
-            }
-
-            Console.WriteLine("Corti rejected the result. Claude will try again.\n");
-
-            conversation.Add(new MessageParam
-            {
-                Role = Role.User,
-                Content = $"Corti rejected your output try again:\n\n{checkResult}"
-            });
+            break;
         }
     }
 }
@@ -255,7 +241,7 @@ public async Task RunAsync()
 
 
 
-private async Task<string> CheckOutput(string output)
+private async Task<string> CheckOutput(string prompt, string output)
 {
     var client = new ChatClient(
         "corti-s1-mini",
@@ -269,9 +255,10 @@ private async Task<string> CheckOutput(string output)
 
     var response = await client.CompleteChatAsync(
     [
-        new SystemChatMessage("Approve correct solutions, reject incorrect ones, and explain any errors. Reply APPROVED or REJECTED with feedback."),
+        new SystemChatMessage(
+            "Act as a senior software engineer reviewing the entire codebase. Return only: 1. Main strengths (max 2). 2. Biggest problems (max 3). 3. 2 improvement suggestions. Be specific. Maximum 150 words. Do not rewrite code.\""),
         new UserChatMessage(
-            $"Original task:\nGenerated output:\n{output}")
+            $"Original task:\n{prompt}\n\nGenerated output:\n{output}")
     ]);
 
     return response.Value.Content[0].Text;
@@ -314,7 +301,8 @@ private async Task<string> CheckOutput(string output)
         var input = JsonNode.Parse(json)!;
         var path = input["path"]!.GetValue<string>();
         var oldText = input["old_str"]?.GetValue<string>() ?? "";
-        var newText = input["new_str"]!.GetValue<string>();
+        var newText = input["new_str"]?.GetValue<string>()
+                      ?? throw new ArgumentException("Missing required argument: new_str");
 
         if (!File.Exists(path))
         {

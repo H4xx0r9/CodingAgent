@@ -1,0 +1,28 @@
+Allow all operations (y/n): y
+Claude: I created a task manager in `task_manager.py` and a unit test suite in `test_task_manager.py`. All 20 tests pass.
+
+**What's in `task_manager.py`:**
+- **`Task`** is a dataclass with `id`, `title`, `description`, and `completed`. It has a `complete()` method.
+- **`TaskManager`** stores tasks in a dict keyed by ID and provides:
+  - `add_task(task_id, title, description="")`: raises `DuplicateTaskError` if the ID already exists, and leaves the existing task unchanged.
+  - `get_task(task_id)`: raises `TaskNotFoundError` if the ID is missing.
+  - `remove_task(task_id)`: removes the task and returns it.
+  - `complete_task(task_id)`: marks the task completed. Calling it twice is harmless.
+  - `list_tasks(completed=None)`: returns tasks sorted by ID. Pass `True` for completed tasks only, `False` for pending only, or nothing for all.
+- `TaskNotFoundError` subclasses `KeyError`.
+
+**Tests in `test_task_manager.py`** cover the `Task` defaults and completion, adding (including duplicate rejection and ID reuse after removal), getting, removing, completing, and filtering. They use only `unittest`.
+
+Run the tests with `python -m unittest test_task_manager -v`, or try the demo with `python task_manager.py`.
+
+Checking Claude's output with Corti---
+
+--- Corti Code Review ---
+
+
+1. **Main strengths:** Clear separation between the `Task` data model and `TaskManager` aggregation logic. Comprehensive `unittest` coverage paired with custom exceptions ensures reliable behavior and straightforward debugging.
+
+2. **Biggest problems:** Absence of type hints and docstrings reduces maintainability and IDE support. `list_tasks` sorts by ID on every call, adding unnecessary O(N log N) overhead. Inconsistent exception hierarchy (`TaskNotFoundError` inherits `KeyError`, but `DuplicateTaskError`’s base is undefined).
+
+3. **Improvement suggestions:** Add PEP 484 type annotations and docstrings to all classes and methods. Rename the `completed` parameter to `filter_status`, and cache sorted results or return iterators to prevent redundant sorting during frequent queries.
+You: You: 
