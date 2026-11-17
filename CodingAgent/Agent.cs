@@ -7,13 +7,15 @@ using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel;
 using System.Text;
+using CodingAgent.Context;
 
 public class Agent
 {
     
     private readonly AnthropicClient _client;
     private readonly List<ToolDefinition> _tools = new();
-
+    private readonly RepositoryContextManager _contextManager =
+    new RepositoryContextManager();
     private static readonly Dictionary<string, (double Input, double Output)> ModelRates = new()
     {
         ["claude-fable-5-1"] = (10.0, 50.0),
@@ -33,11 +35,20 @@ public class Agent
         _tools.Add(new ToolDefinition("run_command",
             "Execute any PowerShell command in the current project directory.",
             RunCommandSchema(), RunCommand));
+
+        _tools.Add(new ToolDefinition(
+            "add_repo_as_agents_context",
+            "Add a repository to your context. Ask the user for its path and index it.",
+            AddRepoAsAgentsContextSchema(),
+            AddRepoAsAgentsContext
+
+        ));
     }
 
 
 public async Task RunAsync()
-{
+{   
+
     var conversation = new List<MessageParam>();
     string model_name = "claude-haiku-5-5";
 
@@ -334,7 +345,26 @@ private async Task<string> CheckOutput(string prompt, string output)
         await File.WriteAllTextAsync(path, content);
         return "OK";
     }
+    private async Task<string> AddRepoAsAgentsContext(string json)
+    {
+        Console.Write("\nEnter new repository path: ");
 
+        string? path = Console.ReadLine()?.Trim().Trim('"');
+
+        if (string.IsNullOrWhiteSpace(path))
+            return "Repository path cannot be empty.";
+
+        try
+        {
+            await _contextManager.AddRepositoryAsync(path);
+
+            return $"Successfully added repository '{Path.GetFileName(path)}' to the agent's context.";
+        }
+        catch (Exception ex)
+        {
+            return $"Failed to add repository: {ex.Message}";
+        }
+    }
     private static async Task<string> RunCommand(string json)
     {
         var input = JsonNode.Parse(json)!;
@@ -384,7 +414,11 @@ private async Task<string> CheckOutput(string prompt, string output)
         },
         Required = ["command"]
     };
-
+        private static InputSchema AddRepoAsAgentsContextSchema() => new()
+    {
+        Properties = new Dictionary<string, JsonElement>(),
+        Required = []
+    };
     private sealed record ToolDefinition(
         string Name,
         string Description,
