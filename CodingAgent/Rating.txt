@@ -1,0 +1,94 @@
+--- Corti Version 1 Review ---
+{
+  "files": [
+    {
+      "path": "calculator.py",
+      "score": 96,
+      "strengths": [
+        "Implements the required addition and subtraction behavior clearly.",
+        "Docstrings and a small demo make the API easy to understand."
+      ],
+      "weaknesses": [
+        "No input validation, though that is reasonable for a simple calculator.",
+        "The demo block makes it less pure as a library file."
+      ],
+      "suggestions": [
+        "Add type hints for parameters and return values.",
+        "Move the demo into a separate example file if this module is intended for reuse."
+      ]
+    },
+    {
+      "path": "test_calculator.py",
+      "score": 97,
+      "strengths": [
+        "Covers positive, negative, zero, and float cases for both operations.",
+        "Uses assertAlmostEqual appropriately for floating-point arithmetic."
+      ],
+      "weaknesses": [
+        "Repeated test structure could be compacted with subTest or parameterized cases.",
+        "Comments add a little redundancy because the test names are already descriptive."
+      ],
+      "suggestions": [
+        "Consider using subTest to reduce duplication across cases.",
+        "Add a module docstring to explain the test suite purpose."
+      ]
+    }
+  ]
+}
+Collecting files for Corti review...
+
+Corti is reviewing Version 2...
+
+--- Corti Version 2 Review ---
+{
+  "files": [
+    {
+      "path": "calculator.py",
+      "score": 96,
+      "strengths": [
+        "Clean, type-hinted API for addition and subtraction.",
+        "Docstrings make intent and behavior clear."
+      ],
+      "weaknesses": [
+        "Float type hints do not state how non-numeric input is handled.",
+        "No input validation, though acceptable for a simple calculator."
+      ],
+      "suggestions": [
+        "Use int/float union hints to describe accepted numbers.",
+        "Add a brief docstring note about expected numeric behavior."
+      ]
+    },
+    {
+      "path": "example.py",
+      "score": 92,
+      "strengths": [
+        "Separated demo keeps calculator.py a focused library module.",
+        "Type-hinted main function follows basic Python conventions."
+      ],
+      "weaknesses": [
+        "Demo only prints results and cannot verify behavior.",
+        "Hard-coded examples provide no reusable configuration."
+      ],
+      "suggestions": [
+        "Return values from a small demonstration function for testability.",
+        "Allow optional arguments to demonstrate flexible usage."
+      ]
+    },
+    {
+      "path": "test_calculator.py",
+      "score": 95,
+      "strengths": [
+        "Tests cover positive, negative, zero, and float edge cases.",
+        "subTest usage improves failure reporting without excessive duplication."
+      ],
+      "weaknesses": [
+        "Only addition and subtraction are tested, but the task scope is limited.",
+        "No tests for invalid or boundary numeric inputs."
+      ],
+      "suggestions": [
+        "Add a few property-style cases for commutativity or inverses.",
+        "Document that float tolerance is intentionally approximate."
+      ]
+    }
+  ]
+}

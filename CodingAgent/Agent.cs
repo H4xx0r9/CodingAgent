@@ -34,8 +34,7 @@ public class Agent
             "Execute any PowerShell command in the current project directory.",
             RunCommandSchema(), RunCommand));
     }
-
-
+    
 public async Task RunAsync()
 {
     var conversation = new List<MessageParam>();
@@ -56,6 +55,13 @@ public async Task RunAsync()
             Role = Role.User,
             Content = input
         });
+
+        bool version2 = false;
+
+        var filesForReview = new HashSet<string>(
+            StringComparer.OrdinalIgnoreCase);
+
+        var generatedOutput = new StringBuilder();
 
         while (true)
         {
@@ -89,7 +95,6 @@ public async Task RunAsync()
             var assistantContent = new List<ContentBlockParam>();
             var toolResults = new List<ContentBlockParam>();
             var pendingTools = new List<(string ID, string Name, string Input, ToolDefinition Tool)>();
-            var generatedOutput = new StringBuilder();
 
             foreach (var block in response.Content)
             {
@@ -132,8 +137,8 @@ public async Task RunAsync()
                     {
                         try
                         {
-                            var result = await tool.Execute(
-                                JsonSerializer.Serialize(toolUse.Input));
+                            var json = JsonSerializer.Serialize(toolUse.Input);
+                            var result = await tool.Execute(json);
 
                             toolResults.Add(new ToolResultBlockParam
                             {
@@ -188,6 +193,15 @@ public async Task RunAsync()
                         try
                         {
                             result = await item.Tool.Execute(item.Input);
+
+                            if (item.Name == "edit_file")
+                            {
+                                var fileInput = JsonNode.Parse(item.Input);
+                                var filePath = fileInput?["path"]?.GetValue<string>();
+
+                                if (!string.IsNullOrWhiteSpace(filePath))
+                                    filesForReview.Add(Path.GetFullPath(filePath));
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -227,11 +241,82 @@ public async Task RunAsync()
                 continue;
             }
 
-            Console.WriteLine("\nChecking Claude's output with Corti---");
-            var review = await CheckOutput(input, generatedOutput.ToString());
-            Console.WriteLine("\n--- Corti Code Review ---");
-            Console.WriteLine(review);
-            
+            // Collect files for Corti review
+            Console.WriteLine("\nCollecting files for Corti review...");
+
+            var codeContext = new StringBuilder();
+
+            foreach (var path in filesForReview)
+            {
+                try
+                {
+                    var content = await File.ReadAllTextAsync(path);
+                    var extension = Path.GetExtension(path).TrimStart('.');
+                    var relativePath = Path.GetRelativePath(
+                        Directory.GetCurrentDirectory(), path)
+                        .Replace('\\', '/');
+
+                    codeContext.AppendLine($"File: {relativePath}");
+                    codeContext.AppendLine($"```{extension}");
+                    codeContext.AppendLine(content);
+                    codeContext.AppendLine("```");
+                    codeContext.AppendLine();
+                }
+                catch (Exception ex)
+                {
+                    codeContext.AppendLine(
+                        $"Could not read {path}: {ex.Message}");
+                }
+            }
+
+            // Corti reviews Version 1
+            if (!version2)
+            {
+                Console.WriteLine("\nCorti is reviewing Version 1...");
+
+                var review = await CheckOutput(
+                    input,
+                    generatedOutput.ToString(),
+                    codeContext.ToString(),
+                    filesForReview);
+
+                Console.WriteLine("\n--- Corti Version 1 Review ---");
+                Console.WriteLine(review);
+
+                conversation.Add(new MessageParam
+                {
+                    Role = Role.User,
+                    Content =
+                        "Corti has reviewed your Version 1. Use its feedback below " +
+                        "to improve your solution. Create VERSION 2 and clearly label it " +
+                        "as VERSION 2. Address the identified problems and incorporate " +
+                        "the improvement suggestions.\n\n" +
+                        "Corti's review:\n" + review
+                });
+
+                // Prepare to track Version 2 files separately
+                filesForReview.Clear();
+                generatedOutput.Clear();
+                version2 = true;
+
+                Console.WriteLine("\n--- Asking Claude for Version 2 ---");
+
+                continue;
+            }
+
+            // Corti reviews Version 2
+            Console.WriteLine("\nCorti is reviewing Version 2...");
+
+            var version2Review = await CheckOutput(
+                input,
+                generatedOutput.ToString(),
+                codeContext.ToString(),
+                filesForReview);
+
+            Console.WriteLine("\n--- Corti Version 2 Review ---");
+            Console.WriteLine(version2Review);
+
+            Console.WriteLine("\n--- Both versions reviewed. Workflow finished. ---");
 
             break;
         }
@@ -240,8 +325,11 @@ public async Task RunAsync()
 
 
 
-
-private async Task<string> CheckOutput(string prompt, string output)
+private async Task<string> CheckOutput(
+    string prompt,
+    string output,
+    string codeContext,
+    HashSet<string> filesForReview)
 {
     var client = new ChatClient(
         "corti-s1-mini",
@@ -253,18 +341,119 @@ private async Task<string> CheckOutput(string prompt, string output)
                 Environment.GetEnvironmentVariable("CORTI_BASE_URL")!)
         });
 
+    var root = Directory.GetCurrentDirectory();
+
+    var fileList = filesForReview.Select(path =>
+        Path.GetRelativePath(root, Path.GetFullPath(path))
+            .Replace('\\', '/'));
+
     var response = await client.CompleteChatAsync(
     [
+        
         new SystemChatMessage(
-            "Act as a senior software engineer reviewing the entire codebase. Return only: 1. Main strengths (max 2). 2. Biggest problems (max 3). 3. 2 improvement suggestions. Be specific. Maximum 150 words. Do not rewrite code.\""),
+            """
+            Act as a senior software engineer reviewing code.
+
+            Review each provided source file and assign it a quality
+            score from 1 to 100.
+
+            Evaluate correctness, readability, maintainability and
+            how well it fulfils the original task.
+
+            Return ONLY valid JSON in this structure:
+
+            {
+              "files": [
+                {
+                  "path": "Program.cs",
+                  "score": 85,
+                  "strengths": ["Short strength"],
+                  "weaknesses": ["Short weakness"],
+                  "suggestions": ["Short suggestion"]
+                }
+              ]
+            }
+
+            Rules:
+            - Score every file.
+            - Use integer scores from 1 to 100.
+            - Maximum 2 strengths, 2 weaknesses and 2 suggestions per file.
+            - Keep each point to one short sentence.
+            - Maximum 80 words per file.
+            - Do not repeat information.
+            - Do not include markdown or text outside the JSON.
+            """),
+
         new UserChatMessage(
-            $"Original task:\n{prompt}\n\nGenerated output:\n{output}")
+            $"Original task:\n{prompt}\n\n" +
+            $"Claude's response:\n{output}\n\n" +
+            $"Files to score:\n{string.Join("\n", fileList)}\n\n" +
+            $"Actual source files:\n{codeContext}")
     ]);
 
-    return response.Value.Content[0].Text;
+    var reviewText = response.Value.Content[0].Text;
+
+    var review = JsonNode.Parse(reviewText) as JsonObject
+        ?? throw new InvalidOperationException(
+            "Corti returned invalid review JSON.");
+
+    var reviewedFiles = review["files"] as JsonArray
+        ?? throw new InvalidOperationException(
+            "Corti did not return a files array.");
+
+    var validationPath = Path.Combine(root, "validation.json");
+
+    var validation = File.Exists(validationPath)
+        ? JsonNode.Parse(await File.ReadAllTextAsync(validationPath))
+            as JsonObject ?? new JsonObject()
+        : new JsonObject();
+
+    foreach (var file in reviewedFiles)
+    {
+        var path = file?["path"]?.GetValue<string>()
+            ?? throw new InvalidOperationException("Missing file path.");
+
+        var score = file?["score"]?.GetValue<int>()
+            ?? throw new InvalidOperationException("Missing file score.");
+
+        if (score < 1 || score > 100)
+            throw new InvalidOperationException("Invalid score from Corti.");
+
+        var fullPath = Path.GetFullPath(Path.Combine(root, path));
+
+        if (!filesForReview.Any(f =>
+            string.Equals(
+                Path.GetFullPath(f),
+                fullPath,
+                StringComparison.OrdinalIgnoreCase)))
+            continue;
+
+        var relativePath = Path.GetRelativePath(root, fullPath)
+            .Replace('\\', '/');
+
+        if (validation[relativePath] is not JsonObject entry)
+        {
+            entry = new JsonObject();
+            validation[relativePath] = entry;
+        }
+
+        entry["score"] = score;
+        entry["reviewer"] = "Corti";
+        entry["lastReviewed"] = DateTime.UtcNow.ToString("o");
+    }
+
+    await File.WriteAllTextAsync(
+        validationPath,
+        validation.ToJsonString(new JsonSerializerOptions
+        {
+            WriteIndented = true
+        }));
+
+    return review.ToJsonString(new JsonSerializerOptions
+    {
+        WriteIndented = true
+    });
 }
-
-
 
     private static void LogTokenUsage(
         string model,
@@ -296,6 +485,7 @@ private async Task<string> CheckOutput(string prompt, string output)
         return await File.ReadAllTextAsync(input["path"]!.GetValue<string>());
     }
 
+
     private static async Task<string> EditFile(string json)
     {
         var input = JsonNode.Parse(json)!;
@@ -303,6 +493,8 @@ private async Task<string> CheckOutput(string prompt, string output)
         var oldText = input["old_str"]?.GetValue<string>() ?? "";
         var newText = input["new_str"]?.GetValue<string>()
                       ?? throw new ArgumentException("Missing required argument: new_str");
+
+        string result;
 
         if (!File.Exists(path))
         {
@@ -314,26 +506,71 @@ private async Task<string> CheckOutput(string prompt, string output)
                 Directory.CreateDirectory(directory);
 
             await File.WriteAllTextAsync(path, newText);
-            return $"Successfully created file {path}";
-        }
-
-        var content = await File.ReadAllTextAsync(path);
-
-        if (oldText != "")
-        {
-            if (!content.Contains(oldText))
-                throw new InvalidOperationException("old_str not found in file");
-
-            content = content.Replace(oldText, newText);
+            result = $"Successfully created file {path}";
         }
         else
         {
-            content = newText;
+            var content = await File.ReadAllTextAsync(path);
+
+            if (oldText != "")
+            {
+                if (!content.Contains(oldText))
+                    throw new InvalidOperationException("old_str not found in file");
+
+                content = content.Replace(oldText, newText);
+            }
+            else
+            {
+                content = newText;
+            }
+
+            await File.WriteAllTextAsync(path, content);
+            result = "OK";
         }
 
-        await File.WriteAllTextAsync(path, content);
-        return "OK";
+        await MarkFileUnverified(path);
+
+        return result;
     }
+    
+    
+    private static async Task MarkFileUnverified(string path)
+    {
+        var root = Directory.GetCurrentDirectory();
+        var validationPath = Path.Combine(root, "validation.json");
+
+        var relativePath = Path.GetRelativePath(
+            root, Path.GetFullPath(path)).Replace('\\', '/');
+
+        JsonObject validation;
+
+        if (File.Exists(validationPath))
+        {
+            validation = (JsonObject)(JsonNode.Parse(
+                await File.ReadAllTextAsync(validationPath)) ?? new JsonObject());
+        }
+        else
+        {
+            validation = new JsonObject();
+        }
+
+        validation[relativePath] = new JsonObject
+        {
+            ["score"] = null,
+            ["reviewer"] = null,
+            ["lastReviewed"] = null
+        };
+
+        await File.WriteAllTextAsync(
+            validationPath,
+            validation.ToJsonString(new JsonSerializerOptions
+            {
+                WriteIndented = true
+            }));
+    }
+
+
+
 
     private static async Task<string> RunCommand(string json)
     {

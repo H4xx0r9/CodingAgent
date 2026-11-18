@@ -1,0 +1,67 @@
+{
+  "calculator_v1.cs": {
+    "score": 75,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T09:34:21.0871926Z"
+  },
+  "calculator_v2.cs": {
+    "score": 81,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T09:36:06.7703990Z"
+  },
+  "calculator.py": {
+    "score": 96,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T09:40:32.0428096Z"
+  },
+  "test_calculator.py": {
+    "score": 95,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T09:40:32.0428246Z"
+  },
+  "example.py": {
+    "score": 92,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T09:40:32.0428171Z"
+  },
+  "calculator_v1.py": {
+    "score": 84,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T09:47:29.0593636Z"
+  },
+  "calculator_v2.py": {
+    "score": 92,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T09:48:12.6376592Z"
+  },
+  "cli_v2.py": {
+    "score": 87,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T09:48:12.6376880Z"
+  },
+  "test_calculator_v2.py": {
+    "score": 90,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T09:48:12.6376993Z"
+  },
+  "shopping_cart.py": {
+    "score": 93,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T13:56:01.0413569Z"
+  },
+  "test_shopping_cart.py": {
+    "score": 96,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T13:56:01.0414201Z"
+  },
+  "shopping_cart_v2.py": {
+    "score": 93,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T13:58:05.0924342Z"
+  },
+  "test_shopping_cart_v2.py": {
+    "score": 95,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T13:58:05.0924470Z"
+  }
+}

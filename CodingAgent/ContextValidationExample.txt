@@ -1,0 +1,39 @@
+On first review 
+"shopping_cart.py": {
+    "score": 93,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T13:56:01.0413569Z"
+  },
+  "test_shopping_cart.py": {
+    "score": 96,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T13:56:01.0414201Z"
+  },
+  "shopping_cart_v2.py": {
+    "score": null,
+    "reviewer": null,
+    "lastReviewed": null
+  }
+}
+On Second Review
+  "shopping_cart.py": {
+    "score": 93,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T13:56:01.0413569Z"
+  },
+  "test_shopping_cart.py": {
+    "score": 96,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T13:56:01.0414201Z"
+  },
+  "shopping_cart_v2.py": {
+    "score": 93,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T13:58:05.0924342Z"
+  },
+  "test_shopping_cart_v2.py": {
+    "score": 95,
+    "reviewer": "Corti",
+    "lastReviewed": "2026-11-18T13:58:05.0924470Z"
+  }
+}
